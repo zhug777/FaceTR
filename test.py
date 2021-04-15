@@ -78,19 +78,19 @@ def main():
     seed_torch()
 
     out_path = os.path.join(os.getcwd(), "checkpoints", cfg.MODEL.NAME)
-    if not os.path.exists(out_path):
-        os.makedirs(out_path)
     checkpoint_file = os.path.join(out_path, cfg.TRAIN.CHECKPOINT)
-    out_channels = len(segments)
-    weight = [1, 1, 1.2, 1.2, 1.2, 1.2, 1, 1.2, 2, 1.2, 1]
-    train_loss = 0.0
-    test_loss = 0.0
+    out_channels = cfg.MODEL.NUM_SEGMENTS
+    val_func = 
+    total = 0.0
+    precs = 0.0
+    recs = 0.0
+    all_f1 = [0] * 10
+    all_prec = [0] * 10
+    all_rec = [0] * 10
     train_losses = []
     test_losses = []
     lrs = []
-    best_perf = 0.0
-    best_model = False
-    begin_epoch = cfg.TRAIN.BEGIN_EPOCH # default value is 1
+    n = 0
 
     # Data loading code
     root = os.path.join(os.getcwd(), "data", cfg.DATASET.ROOT, cfg.DATASET.ROOT)
@@ -102,15 +102,15 @@ def main():
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=cfg.TRAIN.BATCH_SIZE_PER_GPU*len(cfg.GPUS),
-        shuffle=cfg.TRAIN.SHUFFLE,
+        batch_size=cfg.TEST.BATCH_SIZE_PER_GPU*len(cfg.GPUS),
+        shuffle=cfg.TEST.SHUFFLE,
         num_workers=cfg.WORKERS, # num of subprocesses for data loading
         pin_memory=cfg.PIN_MEMORY # default value is False
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=cfg.TEST.BATCH_SIZE_PER_GPU*len(cfg.GPUS),
-        shuffle=False,
+        shuffle=cfg.TEST.SHUFFLE,
         num_workers=cfg.WORKERS,  # num of subprocesses for data loading
         pin_memory=cfg.PIN_MEMORY  # default value is False
     )
@@ -118,103 +118,63 @@ def main():
     model = eval(cfg.MODEL.NAME)(cfg)
     #model = torch.nn.DataParallel(model, device_ids=cfg.GPUS).cuda()
 
-    # define loss function (criterion) and optimizer
-    loss_func = get_loss(loss=cfg.TRAIN.LOSS, alpha=None)
-    optimizer = get_optimizer(cfg, model)
+    assert os.path.exists(checkpoint_file), "No checkpoint for testing!"
+    checkpoint = torch.load(checkpoint_file, map_location=device)
+    model.load_state_dict(checkpoint['best_state_dict'])
+    best_epoch = checkpoint['best_epoch']
+    epoches = checkpoint['cur_epoch']
+    train_losses.extend(checkpoint['trainloss'])
+    test_losses.extend(checkpoint['testloss'])
+    lrs.extend(checkpoint['lrs'])
 
-    if cfg.AUTO_RESUME and os.path.exists(checkpoint_file):
-        checkpoint = torch.load(checkpoint_file, map_location=device)
-        model.load_state_dict(checkpoint['state_dict'])
-        begin_epoch += checkpoint['last_epoch']
-        best_perf = checkpoint['best_perf']
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        # 重载optimizer的参数时将所有的tensor都放到cuda上（加载时默认放在cpu上了）
-        for state in optimizer.state.values():
-            for k, v in state.items():
-                if torch.is_tensor(v):
-                    state[k] = v.to(device)
-        train_losses.extend(checkpoint['trainloss'])
-        test_losses.extend(checkpoint['testloss'])
-        lrs.extend(checkpoint['lrs'])
-
-    scheduler = get_scheduler(cfg, optimizer, begin_epoch)
     model.to(device)
 
-    model.train()
-    for epoch in range(begin_epoch, cfg.TRAIN.END_EPOCH + 1):
+    model.eval()
+    with torch.no_grad():
         print("current epoch is %d" % (epoch))
-        print("current learning rate is %.9f" % (optimizer.param_groups[0]['lr']))
-        lrs.append(optimizer.param_groups[0]['lr'])
-
+        print("best epoch is %d" % (best_epoch))
+        print("testing best weights..")
         for img, mask, heatmaps, edgemap, meta in tqdm(train_loader, total=len(train_loader)):
-            optimizer.zero_grad()  # reset gradient
-            img = img.to(device)
-            mask = mask.type(torch.LongTensor).to(device)
-
-            # pred_img (batch, channel, W, H)
-            pred_img = model(img)
+            n += 1
+            val_img = img.to(device)
+            val_mask = mask.to(device)
+            #pred_img = torch.sigmoid(model(val_img))  # [1, 1, 256, 256]
+            pred_img = model(val_img)  # [1, 11, 256, 256]
             if out_channels == 1:
-                pred_img = pred_img.squeeze(1) 
+                pred_img = pred_img.squeeze(1)  # [1, 256, 256]
+            mean, prec, rec, f1s, precisions, recalls = eval(cfg.TEST.TEST_FUNC)(pred_img, val_mask)
+            #print(mean)
+            total += mean
+            precs += prec
+            recs += rec
+            for i in range(len(all_f1)):
+                all_f1[i] += f1s[i]
+                all_prec[i] += precisions[i]
+                all_rec[i] += recalls[i]
 
-            loss = loss_func(pred_img, mask)
-            train_loss += loss.item()
-            loss.backward() 
-            optimizer.step()  
-
-        if scheduler != None:
-            scheduler.step() # update learning rate
-        print("train loss is " + str(train_loss))
-        train_losses.append(train_loss)
-        train_loss = 0.0
-        # 同时记录测试loss
-        model.eval()
-        with torch.no_grad():
-            for img, mask, heatmaps, edgemap, meta in tqdm(val_loader, total=len(val_loader)):
-                test_img = img.to(device)
-                test_mask = mask
-                test_mask = test_mask.type(torch.LongTensor).to(device)
-                pred_img = model(test_img)
-                if out_channels == 1:
-                    pred_img = pred_img.squeeze(1) 
-
-                loss = loss_func(pred_img, test_mask)
-                test_loss += loss.item()
-
-            print("test loss is " + str(test_loss))
-            test_losses.append(test_loss)
-            perf_indicator = test_loss
-            test_loss = 0.0
-        model.train()
-
-        if perf_indicator >= best_perf:
-            best_perf = perf_indicator
-            best_model = True
-        else:
-            best_model = False
-
-        if best_model:
-            checkpoint = {
-                'state_dict': model.state_dict(),
-                'cur_epoch': epoch,
-                'best_state_dict': model.state_dict(),
-                'best_epoch': epoch,
-                'best_perf': perf_indicator,
-                'optimizer': optimizer.state_dict(),
-                'trainloss': train_losses,
-                'testloss': test_losses,
-                'lrs': lrs
-            }
-        else:
-            checkpoint = {
-                'state_dict': model.state_dict(),
-                'cur_epoch': epoch,
-                'optimizer': optimizer.state_dict(),
-                'trainloss': train_losses,
-                'testloss': test_losses,
-                'lrs': lrs
-            }
-        torch.save(checkpoint, os.path.join(out_path, cfg.TRAIN.CHECKPOINT))
-
+        total = total / n
+        precs = precs / n
+        recs = recs / n
+        for i in range(len(all_f1)):
+            all_f1[i] /= n 
+            all_f1[i] = float(all_f1[i].cpu())
+            all_prec[i] /= n 
+            all_prec[i] = float(all_prec[i].cpu())
+            all_rec[i] /= n 
+            all_rec[i] = float(all_rec[i].cpu())
+        
+        print("mean f1 is " + str(total))
+        print("precision is " + str(precs))
+        print("recall is " + str(recs))
+        print("f1 scores are: ")
+        for i in range(len(segments[1:])):
+            print(segments[i+1], ": ", str(all_f1[i]))
+        print("precisions are: ")
+        for i in range(len(segments[1:])):
+            print(segments[i+1], ": ", str(all_prec[i]))
+        print("recalls are: ")
+        for i in range(len(segments[1:])):
+            print(segments[i+1], ": ", str(all_rec[i]))
 
 if __name__ == '__main__':
     main()

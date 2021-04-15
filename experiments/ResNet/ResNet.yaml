@@ -79,7 +79,8 @@ TRAIN:
 TEST:
   BLUR_KERNEL: 11
   BATCH_SIZE_PER_GPU: 1
-  MODEL_FILE: models/pytorch/transpose_coco/tp_r_256x192_enc4_d256_h1024_mh8.pth
+  SHUFFLE: true
+  TEST_FUNC: 'compute_meanf1'
   FLIP_TEST: true
   POST_PROCESS: true
   SHIFT_HEATMAP: true

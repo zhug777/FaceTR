@@ -119,6 +119,7 @@ _C.TEST.BLUR_KERNEL = 3
 
 # size of images for each device
 _C.TEST.BATCH_SIZE_PER_GPU = 32
+_C.TEST.SHUFFLE = False
 # Test Model Epoch
 _C.TEST.FLIP_TEST = False
 _C.TEST.POST_PROCESS = False
@@ -134,7 +135,7 @@ _C.TEST.OKS_THRE = 0.5
 _C.TEST.IN_VIS_THRE = 0.0
 _C.TEST.COCO_BBOX_FILE = ''
 _C.TEST.BBOX_THRE = 1.0
-_C.TEST.MODEL_FILE = ''
+_C.TEST.TEST_FUNC = ''
 
 # debug
 _C.DEBUG = CN()
@@ -166,11 +167,6 @@ def update_config(cfg, args):
     cfg.MODEL.PRETRAINED_PATH = os.path.join(
         cfg.DATA_DIR, cfg.MODEL.PRETRAINED_PATH
     )
-
-    if cfg.TEST.MODEL_FILE:
-        cfg.TEST.MODEL_FILE = os.path.join(
-            cfg.DATA_DIR, cfg.TEST.MODEL_FILE
-        )
 
     cfg.freeze()
 

@@ -136,3 +136,4 @@ test
 task_face.py
 test_face.py
 .git
+.DS_Store

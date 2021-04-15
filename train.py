@@ -81,14 +81,14 @@ def main():
     if not os.path.exists(out_path):
         os.makedirs(out_path)
     checkpoint_file = os.path.join(out_path, cfg.TRAIN.CHECKPOINT)
-    out_channels = len(segments)
-    weight = [1, 1, 1.2, 1.2, 1.2, 1.2, 1, 1.2, 2, 1.2, 1]
+    out_channels = cfg.MODEL.NUM_SEGMENTS
+    weights = [1, 1, 1.2, 1.2, 1.2, 1.2, 1, 1.2, 2, 1.2, 1]
     train_loss = 0.0
     test_loss = 0.0
     train_losses = []
     test_losses = []
     lrs = []
-    best_perf = 0.0
+    best_perf = 100000.0
     best_model = False
     begin_epoch = cfg.TRAIN.BEGIN_EPOCH # default value is 1
 
@@ -110,7 +110,7 @@ def main():
     val_loader = DataLoader(
         val_dataset,
         batch_size=cfg.TEST.BATCH_SIZE_PER_GPU*len(cfg.GPUS),
-        shuffle=False,
+        shuffle=cfg.TEST.SHUFFLE,
         num_workers=cfg.WORKERS,  # num of subprocesses for data loading
         pin_memory=cfg.PIN_MEMORY  # default value is False
     )
@@ -124,9 +124,12 @@ def main():
 
     if cfg.AUTO_RESUME and os.path.exists(checkpoint_file):
         checkpoint = torch.load(checkpoint_file, map_location=device)
+        print(checkpoint.keys())
+        
         model.load_state_dict(checkpoint['state_dict'])
-        begin_epoch += checkpoint['last_epoch']
-        best_perf = checkpoint['best_perf']
+        begin_epoch += checkpoint['cur_epoch']
+        if 'best_perf' in checkpoint.keys():
+            best_perf = checkpoint['best_perf']
         optimizer.load_state_dict(checkpoint['optimizer'])
         # 重载optimizer的参数时将所有的tensor都放到cuda上（加载时默认放在cpu上了）
         for state in optimizer.state.values():
@@ -186,7 +189,7 @@ def main():
             test_loss = 0.0
         model.train()
 
-        if perf_indicator >= best_perf:
+        if perf_indicator < best_perf:
             best_perf = perf_indicator
             best_model = True
         else:
@@ -214,7 +217,7 @@ def main():
                 'lrs': lrs
             }
         torch.save(checkpoint, os.path.join(out_path, cfg.TRAIN.CHECKPOINT))
-
+        
 
 if __name__ == '__main__':
     main()

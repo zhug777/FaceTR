@@ -79,7 +79,8 @@ TRAIN:
 TEST:
   BLUR_KERNEL: 11
   BATCH_SIZE_PER_GPU: 1
-  MODEL_FILE: ''
+  SHUFFLE: false
+  TEST_FUNC: 'compute_meanf1'
   FLIP_TEST: true
   POST_PROCESS: true
   SHIFT_HEATMAP: true

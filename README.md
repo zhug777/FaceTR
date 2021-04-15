@@ -2,7 +2,7 @@
 
 ### Installation
 
-1. Clone this repository, and we'll call the directory that you cloned as ${POSE_ROOT}
+1. Clone this repository, and we'll call the directory that you cloned as ${ROOT}
 
    ```
    git clone https://github.com/zhug777/FaceTR.git
@@ -16,7 +16,7 @@
    pip install -r requirements.txt
    ```
    
-4. Make pretrained_models and checkpoints directories under ${POSE_ROOT}:
+4. Make pretrained_models and checkpoints directories under ${ROOT}:
 
    ```
    mkdir pretrained_models checkpoints
@@ -25,7 +25,7 @@
 5. Download pretrained models for training: [resnet101]('https://download.pytorch.org/models/resnet101-5d3b4d8f.pth'), rename it to **resnet101.pth**; [Vision Transformer]('https://github.com/lukemelas/PyTorch-Pretrained-ViT/releases/download/0.0.2/B_16.pth'), rename it to **B_16.pth**. And then make them look like this:
 
    ```
-   ${POSE_ROOT}
+   ${ROOT}
     `-- pretrained_models
         |-- resnet101.pth
         |-- B_16.pth  
@@ -33,10 +33,10 @@
 
 ### Data Preparation
 
-Prepare the LaPa train/val/test dataset and the annotations from [LaPa](https://github.com/lucia123/lapa-dataset). Please download or link them to ${POSE_ROOT}/data/LaPa/, and make them look like this:
+Prepare the LaPa train/val/test dataset and the annotations from [LaPa](https://github.com/lucia123/lapa-dataset). Please download or link them to ${ROOT}/data/LaPa/, and make them look like this:
 
 ```
-${POSE_ROOT}/data/LaPa/
+${ROOT}/data/LaPa/
 |-- test
 |   |-- images
 |	|   |-- 2569520_1.jpg
@@ -71,22 +71,40 @@ ${POSE_ROOT}/data/LaPa/
 
 ### Traing & Testing
 
-#### Training SETR
+#### Training SETR for face parsing
 
 ```
 python train.py --cfg experiments/SETR/SETR_raw.yaml
 ```
 
-#### Training baseline
+#### Training baseline for face parsing
 
 ```
 python train.py --cfg experiments/ResNet/ResNet.yaml
 ```
 
-#### Training ViT
+#### Training ViT for face parsing
 
 ```
 python train.py --cfg experiments/ViT/ViT.yaml
+```
+
+#### Testing SETR for face parsing
+
+```
+python test.py --cfg experiments/SETR/SETR_raw.yaml
+```
+
+#### Testing baseline for face parsing
+
+```
+python test.py --cfg experiments/ResNet/ResNet.yaml
+```
+
+#### Testing ViT for face parsing
+
+```
+python test.py --cfg experiments/ViT/ViT.yaml
 ```
 
 ### Acknowledgements
