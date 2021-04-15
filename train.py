@@ -123,13 +123,11 @@ def main():
     optimizer = get_optimizer(cfg, model)
 
     if cfg.AUTO_RESUME and os.path.exists(checkpoint_file):
-        checkpoint = torch.load(checkpoint_file, map_location=device)
-        print(checkpoint.keys())
-        
+        checkpoint = torch.load(checkpoint_file, map_location=device)       
         model.load_state_dict(checkpoint['state_dict'])
         begin_epoch += checkpoint['cur_epoch']
-        if 'best_perf' in checkpoint.keys():
-            best_perf = checkpoint['best_perf']
+        #if 'best_perf' in checkpoint.keys():
+        best_perf = checkpoint['best_perf']
         optimizer.load_state_dict(checkpoint['optimizer'])
         # 重载optimizer的参数时将所有的tensor都放到cuda上（加载时默认放在cpu上了）
         for state in optimizer.state.values():
