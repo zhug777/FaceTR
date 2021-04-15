@@ -1,0 +1,86 @@
+AUTO_RESUME: false # 设置自动保存
+PIN_MEMORY: false
+CUDNN:
+  BENCHMARK: true
+  DETERMINISTIC: false
+  ENABLED: true
+DATA_DIR: ''
+GPUS: (0,) # set num of GPUs
+OUTPUT_DIR: 'output'
+LOG_DIR: 'log'
+WORKERS: 14 # num of subprocesses for data loading
+PRINT_FREQ: 100
+
+DATASET:
+  COLOR_RGB: true
+  DATASET: 'FaceDataset'
+  DATA_FORMAT: jpg
+  FLIP: true
+  NUM_JOINTS_HALF_BODY: 8
+  PROB_HALF_BODY: 0.3
+  ROOT: 'LaPa' # LaPa dataset root
+  ROT_FACTOR: 45
+  SCALE_FACTOR: 0.35
+  TEST_SET: 'test' # testset of LaPa
+  TRAIN_SET: 'train' # trainset of LaPa
+MODEL:
+  # Transformer Encoder
+  DIM_MODEL: 768
+  DIM_FEEDFORWARD: 1024
+  N_HEAD: 16
+  ENCODER_LAYERS: 6
+  ATTENTION_ACTIVATION: relu
+  POS_EMBEDDING: sine
+  # #
+  NAME: 'PreTrainModel'
+  PRETRAINED: True
+  PRETRAINED_NAME: 'B_16'
+  PRETRAINED_PATH: 'pretrained_models/B_16.pth'
+  IMAGE_SIZE:
+  - 224
+  - 224
+  HEATMAP_SIZE:
+  - 224
+  - 224
+  SIGMA: 2
+  IN_CHANNELS: 3
+  NUM_SEGMENTS: 11
+  NUM_KPTS: 106
+  TARGET_TYPE: 'gaussian'
+LOSS:
+  USE_TARGET_WEIGHT: true
+TRAIN:
+  BATCH_SIZE_PER_GPU: 16
+  SHUFFLE: true
+  BEGIN_EPOCH: 1
+  END_EPOCH: 300
+  OPTIMIZER: 'adam'
+  LOSS: 'focal'
+  LR_SCHEDULE: 'constant' 
+  LR: 0.0001  # Initial learning rate
+  LR_END: 0.00001  # Final learning rate
+  LR_FACTOR: 0.25  # for MultiStepLR
+  LR_STEP:  # for MultiStepLR
+  - 100
+  - 150
+  - 200
+  - 220
+  WD: 0.00001
+  GAMMA1: 0.99
+  GAMMA2: 0.0
+  MOMENTUM: 0.9
+  NESTEROV: False
+  CHECKPOINT: 'setr_seg.pkl'
+TEST:
+  BLUR_KERNEL: 11
+  BATCH_SIZE_PER_GPU: 1
+  MODEL_FILE: models/pytorch/transpose_coco/tp_r_256x192_enc4_d256_h1024_mh8.pth
+  FLIP_TEST: true
+  POST_PROCESS: true
+  SHIFT_HEATMAP: true
+DEBUG:
+  DEBUG: false
+  SAVE_BATCH_IMAGES_GT: true
+  SAVE_BATCH_IMAGES_PRED: true
+  SAVE_HEATMAPS_GT: true
+  SAVE_HEATMAPS_PRED: true
