@@ -92,6 +92,8 @@ def main():
     precisions = []
     recalls = []
     lrs = []
+    best_state_dict = []
+    best_epoch = 0
     best_perf = 100000.0
     best_model = False
     begin_epoch = cfg.TRAIN.BEGIN_EPOCH # default value is 1
@@ -189,7 +191,7 @@ def main():
                 loss = loss_func(pred_img, test_mask)
                 test_loss += loss.item()
 
-                mean, prec, rec, f1s, precisions, recalls = eval(cfg.TEST.TEST_FUNC)(pred_img, val_mask)
+                mean, prec, rec, f1s, precisions, recalls = eval(cfg.TEST.TEST_FUNC)(pred_img, test_mask)
                 for i in range(len(all_prec)):
                     all_prec[i] += precisions[i]
                     all_rec[i] += recalls[i]
