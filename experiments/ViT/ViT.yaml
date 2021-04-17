@@ -13,7 +13,7 @@ PRINT_FREQ: 100
 
 DATASET:
   COLOR_RGB: true
-  DATASET: 'FaceDataset'
+  DATASET: 'FaceDataset' # model class name
   DATA_FORMAT: jpg
   FLIP: true
   NUM_JOINTS_HALF_BODY: 8

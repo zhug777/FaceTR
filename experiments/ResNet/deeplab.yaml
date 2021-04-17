@@ -1,4 +1,4 @@
-AUTO_RESUME: false # 设置自动保存
+AUTO_RESUME: true # 设置自动保存
 PIN_MEMORY: false
 CUDNN:
   BENCHMARK: true
@@ -13,7 +13,7 @@ PRINT_FREQ: 100
 
 DATASET:
   COLOR_RGB: true
-  DATASET: 'FaceDataset' # model class name
+  DATASET: 'FaceDataset'
   DATA_FORMAT: jpg
   FLIP: true
   NUM_JOINTS_HALF_BODY: 8
@@ -37,7 +37,7 @@ MODEL:
   - 6
   POOL_TYPE: 'max_pool'
   # #
-  NAME: 'BasicParseNet'
+  NAME: 'DeepLabV3' # model class name
   PRETRAINED: True
   PRETRAINED_NAME: ''
   PRETRAINED_PATH: 'pretrained_models/resnet101.pth'
@@ -75,7 +75,7 @@ TRAIN:
   GAMMA2: 0.0
   MOMENTUM: 0.9
   NESTEROV: False
-  CHECKPOINT: 'baseparse_seg.pkl'
+  CHECKPOINT: 'deeplab_seg.pkl'
 TEST:
   BLUR_KERNEL: 11
   BATCH_SIZE_PER_GPU: 1

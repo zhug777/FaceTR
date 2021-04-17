@@ -20,7 +20,7 @@ DATASET:
   PROB_HALF_BODY: 0.3
   ROOT: 'LaPa' # LaPa dataset
   ROT_FACTOR: 45
-  SCALE_FACTOR: 0.35
+  SCALE_FACTOR: 0.3
   TEST_SET: 'test' # testset of LaPa
   TRAIN_SET: 'train' # trainset of LaPa
 MODEL:
@@ -75,7 +75,7 @@ TRAIN:
   GAMMA2: 0.0
   MOMENTUM: 0.9
   NESTEROV: False
-  CHECKPOINT: 'setr_seg_raw.pkl'
+  CHECKPOINT: 'setr_seg_raw_aug.pkl'
 TEST:
   BLUR_KERNEL: 11
   BATCH_SIZE_PER_GPU: 1

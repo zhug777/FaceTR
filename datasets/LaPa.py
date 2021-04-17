@@ -37,7 +37,7 @@ class FaceDataset(Dataset):
         self.image_size = np.array(image_size)
         self.scale_factor = scale_factor
         self.rotation_factor = rotation_factor
-        self.is_train = False
+        self.is_train = is_train
 
     def __getitem__(self, idx):
         img = cv2.imread(
@@ -107,14 +107,17 @@ class FaceDataset(Dataset):
 
     def _generate_heatmaps(self, kpts):
         heatmaps = np.zeros(shape=(len(kpts), self.image_size[0], self.image_size[1]))
+        '''
         for i, kpt in enumerate(kpts):
             heatmap = CenterLabelHeatMap(self.image_size[0], self.image_size[1], kpt[0], kpt[1], sigma=10)
             heatmaps[i] = heatmap
         heatmaps = torch.tensor(heatmaps)
+        '''
         return heatmaps
     
     def _generate_edgemap(self, mask):
         edgemap = np.zeros_like(mask)
+        '''
         for h in range(self.image_size[1])[:-1]:
             for w in range(self.image_size[0])[1:]:
                 if mask[h][w] != mask[h+1][w] or mask[h][w] != mask[h][w-1]:
@@ -126,4 +129,5 @@ class FaceDataset(Dataset):
             if mask[self.image_size[1]-1][w] != mask[self.image_size[1]-1][w-1]:
                 edgemap[self.image_size[1]-1][w] = 1
         edgemap = torch.tensor(edgemap)
+        '''
         return edgemap

@@ -80,16 +80,12 @@ def main():
     out_path = os.path.join(os.getcwd(), "checkpoints", cfg.MODEL.NAME)
     checkpoint_file = os.path.join(out_path, cfg.TRAIN.CHECKPOINT)
     out_channels = cfg.MODEL.NUM_SEGMENTS
-    val_func = 
     total = 0.0
     precs = 0.0
     recs = 0.0
     all_f1 = [0] * 10
     all_prec = [0] * 10
     all_rec = [0] * 10
-    train_losses = []
-    test_losses = []
-    lrs = []
     n = 0
 
     # Data loading code
@@ -120,21 +116,19 @@ def main():
 
     assert os.path.exists(checkpoint_file), "No checkpoint for testing!"
     checkpoint = torch.load(checkpoint_file, map_location=device)
-    model.load_state_dict(checkpoint['best_state_dict'])
-    best_epoch = checkpoint['best_epoch']
-    epoches = checkpoint['cur_epoch']
-    train_losses.extend(checkpoint['trainloss'])
-    test_losses.extend(checkpoint['testloss'])
-    lrs.extend(checkpoint['lrs'])
+    print(checkpoint.keys())
+    model.load_state_dict(checkpoint['state_dict'])
+    #best_epoch = checkpoint['best_epoch']
+    epoch = checkpoint['cur_epoch']
 
     model.to(device)
 
     model.eval()
     with torch.no_grad():
         print("current epoch is %d" % (epoch))
-        print("best epoch is %d" % (best_epoch))
-        print("testing best weights..")
-        for img, mask, heatmaps, edgemap, meta in tqdm(train_loader, total=len(train_loader)):
+        #print("best epoch is %d" % (best_epoch))
+        print("testing weights..")
+        for img, mask, heatmaps, edgemap, meta in tqdm(val_loader, total=len(val_loader)):
             n += 1
             val_img = img.to(device)
             val_mask = mask.to(device)

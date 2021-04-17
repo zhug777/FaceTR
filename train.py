@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+os.environ["CUDA_VISIBLE_DEVICES"] = '2'
 import pprint
 import shutil
 import glob
@@ -87,6 +87,10 @@ def main():
     test_loss = 0.0
     train_losses = []
     test_losses = []
+    all_prec = [0] * 10
+    all_rec = [0] * 10
+    precisions = []
+    recalls = []
     lrs = []
     best_perf = 100000.0
     best_model = False
@@ -96,7 +100,8 @@ def main():
     root = os.path.join(os.getcwd(), "data", cfg.DATASET.ROOT, cfg.DATASET.ROOT)
     #root = "E:\\datasets\\LaPa\\LaPa"
     train_dataset = eval(cfg.DATASET.DATASET)(
-        root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=True)
+        root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=True, 
+        scale_factor=cfg.DATASET.SCALE_FACTOR, rotation_factor=cfg.DATASET.ROT_FACTOR)
     val_dataset = eval(cfg.DATASET.DATASET)(
         root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=False)
 
@@ -127,6 +132,8 @@ def main():
         model.load_state_dict(checkpoint['state_dict'])
         begin_epoch += checkpoint['cur_epoch']
         #if 'best_perf' in checkpoint.keys():
+        best_state_dict = checkpoint['best_state_dict']
+        best_epoch = checkpoint['best_epoch']
         best_perf = checkpoint['best_perf']
         optimizer.load_state_dict(checkpoint['optimizer'])
         # 重载optimizer的参数时将所有的tensor都放到cuda上（加载时默认放在cpu上了）
@@ -136,6 +143,8 @@ def main():
                     state[k] = v.to(device)
         train_losses.extend(checkpoint['trainloss'])
         test_losses.extend(checkpoint['testloss'])
+        precisions.extend(checkpoint['precisions'])
+        recall.extend(checkpoint['recalls'])
         lrs.extend(checkpoint['lrs'])
 
     scheduler = get_scheduler(cfg, optimizer, begin_epoch)
@@ -176,13 +185,26 @@ def main():
                 test_mask = test_mask.type(torch.LongTensor).to(device)
                 pred_img = model(test_img)
                 if out_channels == 1:
-                    pred_img = pred_img.squeeze(1) 
-
+                    pred_img = pred_img.squeeze(1)
                 loss = loss_func(pred_img, test_mask)
                 test_loss += loss.item()
 
+                mean, prec, rec, f1s, precisions, recalls = eval(cfg.TEST.TEST_FUNC)(pred_img, val_mask)
+                for i in range(len(all_prec)):
+                    all_prec[i] += precisions[i]
+                    all_rec[i] += recalls[i]
+
+            for i in range(len(all_prec)):
+                all_prec[i] /= len(val_loader)
+                all_rec[i] /= len(val_loader)
             print("test loss is " + str(test_loss))
+            print("precisions are {}".format(all_prec))
+            print("recalls are {}".format(all_rec))
+            total_prec = 0.0
+            total_rec = 0.0
             test_losses.append(test_loss)
+            precisions.append(all_prec)
+            recalls.append(all_rec)
             perf_indicator = test_loss
             test_loss = 0.0
         model.train()
@@ -197,21 +219,28 @@ def main():
             checkpoint = {
                 'state_dict': model.state_dict(),
                 'cur_epoch': epoch,
-                'best_state_dict': model.state_dict(),
+                'best_state_dict': best_state_dict,
                 'best_epoch': epoch,
                 'best_perf': perf_indicator,
                 'optimizer': optimizer.state_dict(),
                 'trainloss': train_losses,
                 'testloss': test_losses,
+                'precisions': precisions,
+                'recalls': recalls,
                 'lrs': lrs
             }
         else:
             checkpoint = {
                 'state_dict': model.state_dict(),
                 'cur_epoch': epoch,
+                'best_state_dict': model.state_dict(),
+                'best_epoch': best_epoch,
+                'best_perf': best_perf,
                 'optimizer': optimizer.state_dict(),
                 'trainloss': train_losses,
                 'testloss': test_losses,
+                'precisions': precisions,
+                'recalls': recalls,
                 'lrs': lrs
             }
         torch.save(checkpoint, os.path.join(out_path, cfg.TRAIN.CHECKPOINT))
