@@ -18,7 +18,7 @@ segments = ['background', 'skin', 'left_eyebrow', 'right_eyebrow', 'left_eye', '
             'nose', 'upper_lip', 'inner_mouth', 'lower_lip', 'hair']
 
 class FaceDataset(Dataset):
-    def __init__(self, root, image_size, is_train=True, scale_factor=0.3, rotation_factor=45):
+    def __init__(self, root, image_size, is_train=True, aug=False, scale_factor=0.2, rotation_factor=20):
         super(FaceDataset, self).__init__()
         if is_train:
             train_img_path = os.path.join(root, "train/images/*")
@@ -37,7 +37,7 @@ class FaceDataset(Dataset):
         self.image_size = np.array(image_size)
         self.scale_factor = scale_factor
         self.rotation_factor = rotation_factor
-        self.is_train = is_train
+        self.aug = aug
 
     def __getitem__(self, idx):
         img = cv2.imread(
@@ -61,7 +61,8 @@ class FaceDataset(Dataset):
         center[1] = (img.shape[0] - 1) * 0.5
         scale = np.array([img.shape[1] * 1.0 / 200, img.shape[0] * 1.0 / 200], dtype=np.float32)* 0.7
         rot = 0
-        if self.is_train == True:
+        if self.aug == True:
+            #print("Implement data augmentation")
             scale = scale * np.clip(np.random.randn() * self.scale_factor + 1, 1 - self.scale_factor, 1 + self.scale_factor)
             rot = np.clip(np.random.randn()*self.rotation_factor, -self.rotation_factor*2, self.rotation_factor*2) if random.random() <= 0.6 else 0
             if random.random() <= 0.5: # random hirizontal flip

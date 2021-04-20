@@ -1,4 +1,4 @@
-AUTO_RESUME: false # 设置自动保存
+AUTO_RESUME: true # 设置自动保存
 PIN_MEMORY: false
 CUDNN:
   BENCHMARK: true
@@ -13,35 +13,40 @@ PRINT_FREQ: 100
 
 DATASET:
   COLOR_RGB: true
-  DATASET: 'FaceDataset' # model class name
+  DATASET: 'FaceDataset'
   DATA_FORMAT: jpg
   FLIP: true
   NUM_JOINTS_HALF_BODY: 8
   PROB_HALF_BODY: 0.3
-  ROOT: 'LaPa' # LaPa dataset root
-  ROT_FACTOR: 45
-  SCALE_FACTOR: 0.35
+  ROOT: 'LaPa' # LaPa dataset
+  ROT_FACTOR: 20
+  SCALE_FACTOR: 0.2
   TEST_SET: 'test' # testset of LaPa
   TRAIN_SET: 'train' # trainset of LaPa
 MODEL:
   # Transformer Encoder
-  DIM_MODEL: 768
+  DIM_MODEL: 1024
   DIM_FEEDFORWARD: 1024
   N_HEAD: 16
   ENCODER_LAYERS: 6
-  ATTENTION_ACTIVATION: relu
+  ATTENTION_ACTIVATION: 'gelu'
   POS_EMBEDDING: sine
+  NUM_DECONV_FILTERS:
+  - 512
+  - 256
+  - 128
+  - 64
   # #
-  NAME: 'PreTrainModel'
-  PRETRAINED: True
-  PRETRAINED_NAME: 'B_16'
-  PRETRAINED_PATH: 'pretrained_models/B_16.pth'
+  NAME: 'SETRModel'
+  PRETRAINED: False
+  PRETRAINED_NAME: ''
+  PRETRAINED_PATH: ''
   IMAGE_SIZE:
-  - 224
-  - 224
+  - 256
+  - 256
   HEATMAP_SIZE:
-  - 224
-  - 224
+  - 256
+  - 256
   SIGMA: 2
   IN_CHANNELS: 3
   NUM_SEGMENTS: 11
@@ -53,12 +58,12 @@ TRAIN:
   BATCH_SIZE_PER_GPU: 16
   SHUFFLE: true
   BEGIN_EPOCH: 1
-  END_EPOCH: 300
+  END_EPOCH: 200
   OPTIMIZER: 'adam'
   LOSS: 'focal'
-  LR_SCHEDULE: 'constant'
-  WARM_UP: 5 
-  LR: 0.0001  # Initial learning rate
+  LR_SCHEDULE: 'constant' 
+  WARM_UP: 5
+  LR: 0.00001  # Initial learning rate
   LR_END: 0.00001  # Final learning rate
   LR_FACTOR: 0.25  # for MultiStepLR
   LR_STEP:  # for MultiStepLR
@@ -71,11 +76,11 @@ TRAIN:
   GAMMA2: 0.0
   MOMENTUM: 0.9
   NESTEROV: False
-  CHECKPOINT: 'setr_seg.pkl'
+  CHECKPOINT: 'setr_seg_focal.pkl'
 TEST:
   BLUR_KERNEL: 11
   BATCH_SIZE_PER_GPU: 1
-  SHUFFLE: true
+  SHUFFLE: false
   TEST_FUNC: 'compute_meanf1'
   FLIP_TEST: true
   POST_PROCESS: true

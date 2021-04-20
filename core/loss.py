@@ -76,7 +76,7 @@ class FocalLoss(nn.Module):
         if isinstance(self.alpha, list):
             assert len(self.alpha)==length, "Wrong length of alpha!"
             self.alpha = torch.FloatTensor(self.alpha).to(device)
-        elif isinstance(self.alpha, int) or isinstance(self.alpha, float):
+        if isinstance(self.alpha, int) or isinstance(self.alpha, float):
             self.alpha = torch.FloatTensor([self.alpha]*length).to(device)
         # important to add reduction='none' to keep per-batch-item loss
         loss_func = nn.CrossEntropyLoss(weight=self.alpha, reduction='none')

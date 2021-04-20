@@ -19,8 +19,8 @@ DATASET:
   NUM_JOINTS_HALF_BODY: 8
   PROB_HALF_BODY: 0.3
   ROOT: 'LaPa' # LaPa dataset
-  ROT_FACTOR: 45
-  SCALE_FACTOR: 0.3
+  ROT_FACTOR: 20
+  SCALE_FACTOR: 0.2
   TEST_SET: 'test' # testset of LaPa
   TRAIN_SET: 'train' # trainset of LaPa
 MODEL:
@@ -62,6 +62,7 @@ TRAIN:
   OPTIMIZER: 'adam'
   LOSS: 'ce'
   LR_SCHEDULE: 'constant' 
+  WARM_UP: 5
   LR: 0.00001  # Initial learning rate
   LR_END: 0.00001  # Final learning rate
   LR_FACTOR: 0.25  # for MultiStepLR

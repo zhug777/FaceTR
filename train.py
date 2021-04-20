@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = '2'
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 import pprint
 import shutil
 import glob
@@ -102,10 +102,10 @@ def main():
     root = os.path.join(os.getcwd(), "data", cfg.DATASET.ROOT, cfg.DATASET.ROOT)
     #root = "E:\\datasets\\LaPa\\LaPa"
     train_dataset = eval(cfg.DATASET.DATASET)(
-        root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=True, 
+        root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=True, aug=False,
         scale_factor=cfg.DATASET.SCALE_FACTOR, rotation_factor=cfg.DATASET.ROT_FACTOR)
     val_dataset = eval(cfg.DATASET.DATASET)(
-        root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=False)
+        root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=False, aug=False)
 
     train_loader = DataLoader(
         train_dataset,
@@ -146,7 +146,7 @@ def main():
         train_losses.extend(checkpoint['trainloss'])
         test_losses.extend(checkpoint['testloss'])
         precisions.extend(checkpoint['precisions'])
-        recall.extend(checkpoint['recalls'])
+        recalls.extend(checkpoint['recalls'])
         lrs.extend(checkpoint['lrs'])
 
     scheduler = get_scheduler(cfg, optimizer, begin_epoch)

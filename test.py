@@ -92,9 +92,9 @@ def main():
     root = os.path.join(os.getcwd(), "data", cfg.DATASET.ROOT, cfg.DATASET.ROOT)
     #root = "E:\\datasets\\LaPa\\LaPa"
     train_dataset = eval(cfg.DATASET.DATASET)(
-        root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=True)
+        root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=True, aug=False)
     val_dataset = eval(cfg.DATASET.DATASET)(
-        root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=False)
+        root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=False, aug=False)
 
     train_loader = DataLoader(
         train_dataset,

@@ -9,6 +9,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import math
 import logging
 import time
 import random
@@ -56,6 +57,8 @@ def get_optimizer(cfg, model):
 
 
 def get_scheduler(cfg, optimizer, begin_epoch):
+    epoches = cfg.TRAIN.END_EPOCH
+    warm_up_epochs = cfg.TRAIN.WARM_UP
     warm_up_with_cosine_lr = lambda epoch: (epoch / warm_up_epochs + 0.1) if epoch < warm_up_epochs else  0.001  if epoch >= epoches - 2  else 0.5 * (1+math.cos(math.pi*(epoch - warm_up_epochs)/(epoches-warm_up_epochs)))
     cosine_lr = lambda epoch: 0.001  if epoch >= epoches - 2  else 0.5 * (1+math.cos(math.pi*epoch/epoches))
     if cfg.TRAIN.LR_SCHEDULE == 'constant':

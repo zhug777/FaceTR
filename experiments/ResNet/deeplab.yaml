@@ -61,7 +61,8 @@ TRAIN:
   END_EPOCH: 200
   OPTIMIZER: 'sgd'
   LOSS: 'ce'
-  LR_SCHEDULE: 'cosine_lr' 
+  LR_SCHEDULE: 'cosine_lr'
+  WARM_UP: 5 
   LR: 0.001  # Initial learning rate
   LR_END: 0.00001  # Final learning rate
   LR_FACTOR: 0.25  # for MultiStepLR

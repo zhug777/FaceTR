@@ -1,4 +1,4 @@
-AUTO_RESUME: false # 设置自动保存
+AUTO_RESUME: true # 设置自动保存
 PIN_MEMORY: false
 CUDNN:
   BENCHMARK: true
@@ -19,8 +19,8 @@ DATASET:
   NUM_JOINTS_HALF_BODY: 8
   PROB_HALF_BODY: 0.3
   ROOT: 'LaPa' # LaPa dataset root
-  ROT_FACTOR: 45
-  SCALE_FACTOR: 0.35
+  ROT_FACTOR: 20
+  SCALE_FACTOR: 0.2
   TEST_SET: 'test' # testset of LaPa
   TRAIN_SET: 'train' # trainset of LaPa
 MODEL:
@@ -55,13 +55,14 @@ MODEL:
 LOSS:
   USE_TARGET_WEIGHT: true
 TRAIN:
-  BATCH_SIZE_PER_GPU: 64
+  BATCH_SIZE_PER_GPU: 4
   SHUFFLE: true
   BEGIN_EPOCH: 1
   END_EPOCH: 200
   OPTIMIZER: 'sgd'
   LOSS: 'ce'
-  LR_SCHEDULE: 'cosine_lr' 
+  LR_SCHEDULE: 'cosine_lr'
+  WARM_UP: 5 
   LR: 0.001  # Initial learning rate
   LR_END: 0.00001  # Final learning rate
   LR_FACTOR: 0.25  # for MultiStepLR
