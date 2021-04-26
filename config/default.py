@@ -88,7 +88,7 @@ _C.DATASET.COLOR_RGB = False
 
 # train
 _C.TRAIN = CN()
-
+_C.TRAIN.AUG = False
 _C.TRAIN.LR_FACTOR = 0.1
 _C.TRAIN.LR_STEP = [90, 110]
 _C.TRAIN.LR = 0.0001

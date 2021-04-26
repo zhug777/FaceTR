@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+os.environ["CUDA_VISIBLE_DEVICES"] = '2'
 import pprint
 import shutil
 import glob
@@ -102,7 +102,7 @@ def main():
     root = os.path.join(os.getcwd(), "data", cfg.DATASET.ROOT, cfg.DATASET.ROOT)
     #root = "E:\\datasets\\LaPa\\LaPa"
     train_dataset = eval(cfg.DATASET.DATASET)(
-        root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=True, aug=False,
+        root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=True, aug=cfg.TRAIN.AUG,
         scale_factor=cfg.DATASET.SCALE_FACTOR, rotation_factor=cfg.DATASET.ROT_FACTOR)
     val_dataset = eval(cfg.DATASET.DATASET)(
         root=root, image_size=cfg.MODEL.IMAGE_SIZE, is_train=False, aug=False)

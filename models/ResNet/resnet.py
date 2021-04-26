@@ -211,22 +211,6 @@ class Decoder2D(nn.Module):
         x = self.final_out(x)
         return x
 
-class Decoder(nn.Module):
-    def __init__(self, in_channels, out_channels=11, planes=512):
-        super().__init__()
-        self.decoder = nn.Sequential(
-            nn.Conv2d(in_channels, planes, 3, padding=1),
-            nn.BatchNorm2d(planes),
-            nn.ReLU(inplace=True),
-            nn.Upsample(scale_factor=16, mode="bilinear", align_corners=True)
-        )
-        self.final_out = nn.Conv2d(planes, out_channels, kernel_size=1, stride=1, padding=0)
-
-    def forward(self, x):
-        x = self.decoder(x)
-        x = self.final_out(x)
-        return x
-
 '''
 class Decoder(nn.Module):
     def __init__(self, in_channels, out_channels=3, planes=512):
@@ -245,25 +229,7 @@ class Decoder(nn.Module):
         x = self.final_out(x)
         return x
 '''
-'''
-class BasicParseNet(nn.Module):
-    def __init__(self, res_path, pretrained=False, levels=[1, 2, 4, 6], pool_type='max_pool', planes=2048, out_channels=11):
-        super(BasicParseNet, self).__init__()
-        self.resnet = ResNet(Bottleneck, [3, 4, 23, 3])
-        if pretrained:
-            self.resnet.load_state_dict(torch.load(res_path))
-            print("Loaded pretrained ResNet101 weights.")
-        self.sppnet = SpatialPyramidPooling2d(levels=levels, pool_type=pool_type)
-        self.decoder = Decoder2D(in_channels=planes * (len(self.sppnet.levels) + 1), out_channels=out_channels)
-    
-    def forward(self, x):
-        N, C, H, W = x.size()
-        res_out = self.resnet(x)
-        pool_out = self.sppnet(res_out)
-        x = torch.cat((res_out, pool_out), 1)
-        x = self.decoder(x)
-        return x
-'''
+
 class BasicParseNet(nn.Module):
     def __init__(self, cfg):
         super(BasicParseNet, self).__init__()

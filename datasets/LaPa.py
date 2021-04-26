@@ -11,6 +11,7 @@ cv2.setNumThreads(0)
 cv2.ocl.setUseOpenCL(False)
 import torch.nn as nn
 import matplotlib.pyplot as plt
+import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
@@ -38,6 +39,10 @@ class FaceDataset(Dataset):
         self.scale_factor = scale_factor
         self.rotation_factor = rotation_factor
         self.aug = aug
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
 
     def __getitem__(self, idx):
         img = cv2.imread(
@@ -64,7 +69,7 @@ class FaceDataset(Dataset):
         if self.aug == True:
             #print("Implement data augmentation")
             scale = scale * np.clip(np.random.randn() * self.scale_factor + 1, 1 - self.scale_factor, 1 + self.scale_factor)
-            rot = np.clip(np.random.randn()*self.rotation_factor, -self.rotation_factor*2, self.rotation_factor*2) if random.random() <= 0.6 else 0
+            #rot = np.clip(np.random.randn()*self.rotation_factor, -self.rotation_factor*2, self.rotation_factor*2) if random.random() <= 0.6 else 0
             if random.random() <= 0.5: # random hirizontal flip
                 cv2.flip(img, 1, img)
                 cv2.flip(mask, 1, mask)
@@ -73,13 +78,9 @@ class FaceDataset(Dataset):
         trans = get_affine_transform(center, scale, rot, self.image_size)
 
         img = cv2.warpAffine(img, trans, (int(self.image_size[0]), int(self.image_size[1])), flags=cv2.INTER_NEAREST)
-        #img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_NEAREST)
-        img_array = np.array(img, dtype=np.float32) / 255
-        img_array = img_array.transpose(2, 0, 1)
-        img = torch.tensor(img_array)
+        img = self.transform(img)
 
         mask = cv2.warpAffine(mask, trans, (int(self.image_size[0]), int(self.image_size[1])), flags=cv2.INTER_NEAREST)
-        #mask = cv2.resize(mask, (256, 256), interpolation=cv2.INTER_NEAREST)
         mask_array = np.array(mask, dtype=np.float32)
         edgemap = self._generate_edgemap(mask_array)
         mask = torch.tensor(mask_array)

@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 import pprint
 import shutil
 import glob
@@ -128,7 +128,7 @@ def main():
         print("current epoch is %d" % (epoch))
         #print("best epoch is %d" % (best_epoch))
         print("testing weights..")
-        for img, mask, heatmaps, edgemap, meta in tqdm(val_loader, total=len(val_loader)):
+        for img, mask, heatmaps, edgemap, meta in tqdm(train_loader, total=len(train_loader)):
             n += 1
             val_img = img.to(device)
             val_mask = mask.to(device)
