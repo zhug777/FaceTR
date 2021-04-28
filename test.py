@@ -128,7 +128,7 @@ def main():
         print("current epoch is %d" % (epoch))
         #print("best epoch is %d" % (best_epoch))
         print("testing weights..")
-        for img, mask, heatmaps, edgemap, meta in tqdm(train_loader, total=len(train_loader)):
+        for img, mask, heatmaps, edgemap, meta in tqdm(val_loader, total=len(val_loader)):
             n += 1
             val_img = img.to(device)
             val_mask = mask.to(device)

@@ -133,6 +133,7 @@ data
 checkpoints
 pretrained_models
 test
+test_model.py
 task_face.py
 test_face.py
 .git

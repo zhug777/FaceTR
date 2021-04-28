@@ -25,6 +25,9 @@ DATASET:
   TRAIN_SET: 'train' # trainset of LaPa
 MODEL:
   # Transformer Encoder
+  PATCH_SIZE:
+  - 16
+  - 16
   DIM_MODEL: 1024
   DIM_FEEDFORWARD: 1024
   N_HEAD: 16
