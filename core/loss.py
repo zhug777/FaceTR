@@ -107,7 +107,9 @@ def focal_loss(input, target, alpha=None, gamma=2):
 
 def get_loss(loss, alpha=None, gamma=2, size_average=True):
     loss_func = None
-    if loss == 'bce_logits':
+    if loss == 'mse':
+        loss_func = nn.MSELoss()
+    elif loss == 'bce_logits':
         loss_func = nn.BCEWithLogitsLoss()
     elif loss == 'ce':
         loss_func = nn.CrossEntropyLoss()

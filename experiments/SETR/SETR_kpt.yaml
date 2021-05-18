@@ -35,12 +35,12 @@ MODEL:
   ATTENTION_ACTIVATION: 'gelu'
   POS_EMBEDDING: sine
   NUM_DECONV_FILTERS:
+  - 768
   - 512
   - 256
   - 128
-  - 64
   # #
-  NAME: 'SETRModelvit'
+  NAME: 'SETRModel'
   PRETRAINED: False
   PRETRAINED_NAME: ''
   PRETRAINED_PATH: ''
@@ -52,22 +52,22 @@ MODEL:
   - 256
   SIGMA: 2
   IN_CHANNELS: 3
-  NUM_SEGMENTS: 11
+  NUM_SEGMENTS: 106 # 暂时按分割的设定来学习关键点，之后改一下模型
   NUM_KPTS: 106
   TARGET_TYPE: 'gaussian'
 LOSS:
   USE_TARGET_WEIGHT: true
 TRAIN:
   AUG: false
-  BATCH_SIZE_PER_GPU: 16
+  BATCH_SIZE_PER_GPU: 12
   SHUFFLE: true
   BEGIN_EPOCH: 1
   END_EPOCH: 200
   OPTIMIZER: 'adam'
-  LOSS: 'focal'
+  LOSS: 'mse'
   LR_SCHEDULE: 'warm_up_with_cosine_lr' 
   WARM_UP: 5
-  LR: 0.0001  # Initial learning rate
+  LR: 0.00001  # Initial learning rate
   LR_END: 0.00001  # Final learning rate
   LR_FACTOR: 0.25  # for MultiStepLR
   LR_STEP:  # for MultiStepLR
@@ -80,12 +80,13 @@ TRAIN:
   GAMMA2: 0.0
   MOMENTUM: 0.9
   NESTEROV: False
-  CHECKPOINT: 'setrvit_seg_focal_noaug_std.pkl'
+  CHECKPOINT: 'setr_kpt_focal_noaug_std.pkl'
 TEST:
   BLUR_KERNEL: 11
   BATCH_SIZE_PER_GPU: 1
   SHUFFLE: false
-  TEST_FUNC: 'compute_meanf1'
+  TEST_FUNC: 'compute_mne'
+  PLOT_PRED: true
   FLIP_TEST: true
   POST_PROCESS: true
   SHIFT_HEATMAP: true

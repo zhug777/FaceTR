@@ -32,9 +32,9 @@ from models import *
 from datasets import *
 from config import cfg
 from config import update_config
-from core.plot import plot_seg_pred
+from core.plot import plot_kpt_pred
 from core.heatmap import CenterLabelHeatMap, CenterGaussianHeatMap
-from core.evalmat import compute_meanf1, compute_mpa, compute_precision
+from core.evalmat_kpt import compute_accuracy, compute_mne
 from core.transforms import get_affine_transform, affine_transform
 from core.loss import get_loss
 from core.utils import get_optimizer, get_scheduler, seed_torch
@@ -72,7 +72,7 @@ def parse_args():
     args = parser.parse_args()
 
     return args
-
+  
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -84,12 +84,8 @@ def main():
     out_path = os.path.join(os.getcwd(), "checkpoints", cfg.MODEL.NAME)
     checkpoint_file = os.path.join(out_path, cfg.TRAIN.CHECKPOINT)
     out_channels = cfg.MODEL.NUM_SEGMENTS
-    total = 0.0
-    precs = 0.0
-    recs = 0.0
-    all_f1 = [0] * 10
-    all_prec = [0] * 10
-    all_rec = [0] * 10
+    num_kpts = cfg.MODEL.NUM_KPTS
+    total_avg_acc = 0
     n = 0
 
     # Data loading code
@@ -135,46 +131,18 @@ def main():
         for img, mask, heatmaps, edgemap, meta in tqdm(val_loader, total=len(val_loader)):
             n += 1
             val_img = img.to(device)
-            val_mask = mask.to(device)
+            val_hm = heatmaps.to(device)
             #pred_img = torch.sigmoid(model(val_img))  # [1, 1, 256, 256]
-            pred_img = model(val_img)  # [1, 11, 256, 256]
+            pred_hm = model(val_img)  # [1, 11, 256, 256]
             if out_channels == 1:
-                pred_img = pred_img.squeeze(1)  # [1, 256, 256]
-            mean, prec, rec, f1s, precisions, recalls = eval(cfg.TEST.TEST_FUNC)(pred_img, val_mask)
+                pred_hm = pred_hm.squeeze(1)  # [1, 256, 256]
+            mne, cnt, pred = eval(cfg.TEST.TEST_FUNC)(pred_hm, val_hm)
             if cfg.TEST.PLOT_PRED:
-                plot_seg_pred(img=meta['raw'], mask=mask, pred=pred_img, filename=meta['imagename'])
-            #print(mean)
-            total += mean
-            precs += prec
-            recs += rec
-            for i in range(len(all_f1)):
-                all_f1[i] += f1s[i]
-                all_prec[i] += precisions[i]
-                all_rec[i] += recalls[i]
+                plot_kpt_pred(img=meta['raw'], pred=pred, kpts=meta['kpts'], filename=meta['imagename'])
+            total_avg_acc += mne
+        total_avg_acc /= n
+        print("Mean normalized error is", total_avg_acc)
 
-        total = total / n
-        precs = precs / n
-        recs = recs / n
-        for i in range(len(all_f1)):
-            all_f1[i] /= n 
-            all_f1[i] = float(all_f1[i].cpu())
-            all_prec[i] /= n 
-            all_prec[i] = float(all_prec[i].cpu())
-            all_rec[i] /= n 
-            all_rec[i] = float(all_rec[i].cpu())
-        
-        print("mean f1 is " + str(total))
-        print("precision is " + str(precs))
-        print("recall is " + str(recs))
-        print("f1 scores are: ")
-        for i in range(len(segments[1:])):
-            print(segments[i+1], ": ", str(all_f1[i]))
-        print("precisions are: ")
-        for i in range(len(segments[1:])):
-            print(segments[i+1], ": ", str(all_prec[i]))
-        print("recalls are: ")
-        for i in range(len(segments[1:])):
-            print(segments[i+1], ": ", str(all_rec[i]))
 
 if __name__ == '__main__':
     main()

@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import argparse
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = '2'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 import pprint
 import shutil
 import glob
@@ -31,7 +31,6 @@ from models import *
 from datasets import *
 from config import cfg
 from config import update_config
-from core.plot import plot_data
 from core.heatmap import CenterLabelHeatMap, CenterGaussianHeatMap
 from core.evalmat import compute_meanf1, compute_mpa, compute_precision
 from core.transforms import get_affine_transform, affine_transform
@@ -160,17 +159,15 @@ def main():
         lrs.append(optimizer.param_groups[0]['lr'])
 
         for img, mask, heatmaps, edgemap, meta in tqdm(train_loader, total=len(train_loader)):
-            #plot_data(img=meta['raw'], mask=mask, filename=meta['imagename'])
             optimizer.zero_grad()  # reset gradient
             img = img.to(device)
-            mask = mask.type(torch.LongTensor).to(device)
-
+            heatmaps = heatmaps.type(torch.FloatTensor).to(device)
             # pred_img (batch, channel, W, H)
             pred_img = model(img)
             if out_channels == 1:
                 pred_img = pred_img.squeeze(1) 
 
-            loss = loss_func(pred_img, mask)
+            loss = loss_func(pred_img, heatmaps)
             train_loss += loss.item()
             loss.backward() 
             optimizer.step()  
@@ -185,14 +182,14 @@ def main():
         with torch.no_grad():
             for img, mask, heatmaps, edgemap, meta in tqdm(val_loader, total=len(val_loader)):
                 test_img = img.to(device)
-                test_mask = mask
-                test_mask = test_mask.type(torch.LongTensor).to(device)
+                test_maps = heatmaps
+                test_maps = test_maps.type(torch.FloatTensor).to(device)
                 pred_img = model(test_img)
                 if out_channels == 1:
                     pred_img = pred_img.squeeze(1)
-                loss = loss_func(pred_img, test_mask)
+                loss = loss_func(pred_img, test_maps)
                 test_loss += loss.item()
-
+            '''
                 mean, prec, rec, f1s, precisions, recalls = eval(cfg.TEST.TEST_FUNC)(pred_img, test_mask)
                 for i in range(len(all_prec)):
                     all_prec[i] += precisions[i]
@@ -204,9 +201,10 @@ def main():
             print("test loss is " + str(test_loss))
             print("precisions are {}".format(all_prec))
             print("recalls are {}".format(all_rec))
+            '''
             test_losses.append(test_loss)
-            precisions.append(all_prec)
-            recalls.append(all_rec)
+            #precisions.append(all_prec)
+            #recalls.append(all_rec)
             perf_indicator = test_loss
             test_loss = 0.0
         model.train()

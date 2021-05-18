@@ -4,7 +4,7 @@ import torch
 import random
 import numpy as np
 from core.heatmap import CenterLabelHeatMap, CenterGaussianHeatMap
-from core.transforms import get_affine_transform, affine_transform
+from core.transforms import get_affine_transform, affine_transform, flip_process
 import glob
 import cv2
 cv2.setNumThreads(0)
@@ -41,7 +41,7 @@ class FaceDataset(Dataset):
         self.aug = aug
         self.transform = transforms.Compose([
             transforms.ToTensor(),
-            #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
     def __getitem__(self, idx):
@@ -64,39 +64,46 @@ class FaceDataset(Dataset):
         center = np.zeros((2), dtype=np.float32)
         center[0] = (img.shape[1] - 1) * 0.5
         center[1] = (img.shape[0] - 1) * 0.5
-        scale = np.array([img.shape[1] * 1.0 / 200, img.shape[0] * 1.0 / 200], dtype=np.float32)* 0.7
+        scale = np.array([img.shape[1] * 1.0 / 200, img.shape[0] * 1.0 / 200], dtype=np.float32)
         rot = 0
+        flip_flag = 0
         if self.aug == True:
             #print("Implement data augmentation")
             scale = scale * np.clip(np.random.randn() * self.scale_factor + 1, 1 - self.scale_factor, 1 + self.scale_factor)
             #rot = np.clip(np.random.randn()*self.rotation_factor, -self.rotation_factor*2, self.rotation_factor*2) if random.random() <= 0.6 else 0
-            if random.random() <= 0.5: # random hirizontal flip
-                cv2.flip(img, 1, img)
-                cv2.flip(mask, 1, mask)
-                for i, kpt in enumerate(kpts):
-                    kpts[i][0] = int(img.shape[1]) - 1 - kpts[i][0]
+            #if random.random() <= 0.5: # random hirizontal flip
+            img = cv2.flip(img, 1)
+            mask = cv2.flip(mask, 1)
+            flip_flag = 1
+            for i, kpt in enumerate(kpts):
+                kpts[i][0] = int(img.shape[1]) - 1 - kpts[i][0]
         trans = get_affine_transform(center, scale, rot, self.image_size)
 
         img = cv2.warpAffine(img, trans, (int(self.image_size[0]), int(self.image_size[1])), flags=cv2.INTER_NEAREST)
+        raw_img = img.copy()
         img = self.transform(img)
 
         mask = cv2.warpAffine(mask, trans, (int(self.image_size[0]), int(self.image_size[1])), flags=cv2.INTER_NEAREST)
         mask_array = np.array(mask, dtype=np.float32)
         edgemap = self._generate_edgemap(mask_array)
         mask = torch.tensor(mask_array)
+        if flip_flag:
+            mask = flip_process(mask)
 
         trans_kpts = []
         for i in range(len(kpts)):
             trans_kpt = list(affine_transform(kpts[i], trans))
             for dim in range(len(trans_kpt)):
-                trans_kpt[dim] = int(trans_kpt[dim])    
+                trans_kpt[dim] = int(trans_kpt[dim]) 
             trans_kpts.append(trans_kpt)
 
         heatmaps = self._generate_heatmaps(trans_kpts)
         meta = {
             'imagename': self.img_url[idx],
             'maskname': self.mask_url[idx],
-            'kptname': self.kpt_url[idx]
+            'kptname': self.kpt_url[idx],
+            'kpts': trans_kpts,
+            'raw': raw_img
         }
         '''
         for i, item in enumerate(segments):
@@ -109,12 +116,10 @@ class FaceDataset(Dataset):
 
     def _generate_heatmaps(self, kpts):
         heatmaps = np.zeros(shape=(len(kpts), self.image_size[0], self.image_size[1]))
-        '''
         for i, kpt in enumerate(kpts):
             heatmap = CenterLabelHeatMap(self.image_size[0], self.image_size[1], kpt[0], kpt[1], sigma=10)
             heatmaps[i] = heatmap
         heatmaps = torch.tensor(heatmaps)
-        '''
         return heatmaps
     
     def _generate_edgemap(self, mask):

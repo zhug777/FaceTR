@@ -34,7 +34,7 @@ class TransEmbeddings(nn.Module): # 生成word embedding
         device = x.device
         
         position_ids = torch.arange(seq_length, dtype=torch.long, device=device)
-        position_ids = position_ids.unsqueeze(0)#.expand(input_shape[:2])
+        position_ids = position_ids.unsqueeze(0).expand(input_shape[:2])
        
         pos_embeddings = self.pos_embeddings(position_ids)
         embeddings = x + pos_embeddings
@@ -54,17 +54,18 @@ class Encoder2D(nn.Module):
         self.patch_embed = InputDense2d(config)
         self.pos_embed = TransEmbeddings(config)
         self.trans_encoder = TransEncoder(config)
-        #assert config.patch_size[0] * config.patch_size[1] * config.hidden_size % 256 == 0, "不能除尽"
-        #self.final_dense = nn.Linear(config.hidden_size, config.patch_size[0] * config.patch_size[1] * config.hidden_size // 256)
+        assert config.patch_size[0] * config.patch_size[1] * config.hidden_size % 256 == 0, "不能除尽"
+        self.final_dense = nn.Linear(config.hidden_size, config.patch_size[0] * config.patch_size[1] * config.hidden_size // 256)
 
     def forward(self, x, mask=None, output_all_encoders=False):
         x = rearrange(x, 'b c (hh p1) (ww p2) -> b (hh ww) (p1 p2 c)', p1 = self.patch_size[0], p2 = self.patch_size[1])
         x = self.patch_embed(x)
         x = self.pos_embed(x)
         encode_x = self.trans_encoder(x, mask)
-        x = encode_x[-1]
-        #x = self.final_dense(encode_x[-1])
-        x = rearrange(x, "b (h w) c -> b c h w", h = self.hh, w = self.ww, c = self.config.hidden_size)
+        #x = encode_x[-1]
+        x = self.final_dense(encode_x[-1])
+        x = rearrange(x, "b (h w) (p1 p2 c) -> b c (h p1) (w p2)", p1 = self.patch_size[0] // 16, p2 = self.patch_size[1] // 16, h = self.hh, w = self.ww, c = self.config.hidden_size)
+        #x = rearrange(x, "b (h w) c -> b c h w", h = self.hh, w = self.ww, c = self.config.hidden_size)
         if not output_all_encoders:
             encode_x = encode_x[-1]
         return encode_x, x 
@@ -103,7 +104,7 @@ class Decoder2D(nn.Module):
         x = self.final_out(x)
         return x
 
-'''
+
 class SETRModelnew(nn.Module):
     def __init__(self, cfg):
         super().__init__()
@@ -152,5 +153,4 @@ class SETRModelnew(nn.Module):
         _, final_x = self.encoder_2d(x, output_all_encoders=False)
         x = self.decoder_2d(final_x)
         return x
-   
-
+'''

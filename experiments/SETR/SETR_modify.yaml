@@ -31,7 +31,7 @@ MODEL:
   DIM_MODEL: 1024
   DIM_FEEDFORWARD: 1024
   N_HEAD: 16
-  ENCODER_LAYERS: 6
+  ENCODER_LAYERS: 8  # 测试layer为8的表现
   ATTENTION_ACTIVATION: 'gelu'
   POS_EMBEDDING: sine
   NUM_DECONV_FILTERS:
@@ -40,7 +40,7 @@ MODEL:
   - 128
   - 64
   # #
-  NAME: 'SETRModelvit'
+  NAME: 'SETRModelmodify'
   PRETRAINED: False
   PRETRAINED_NAME: ''
   PRETRAINED_PATH: ''
@@ -80,7 +80,7 @@ TRAIN:
   GAMMA2: 0.0
   MOMENTUM: 0.9
   NESTEROV: False
-  CHECKPOINT: 'setrvit_seg_focal_noaug_std.pkl'
+  CHECKPOINT: 'setrmod_seg_focal_noaug_std.pkl'
 TEST:
   BLUR_KERNEL: 11
   BATCH_SIZE_PER_GPU: 1

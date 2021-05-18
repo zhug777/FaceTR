@@ -6,16 +6,49 @@ import torch
 from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss
 from einops import rearrange
-from models.SETR.transformer_model import TransModel2d, TransConfig, ACT2FN
+from models.SETRmodify.transformer import TransEncoder, TransConfig, ACT2FN
+
+
+class InputDense2d(nn.Module):
+    def __init__(self, config):
+        super(InputDense2d, self).__init__()
+        self.dense = nn.Linear(config.img_size[0] * config.img_size[1] * config.in_channels, config.hidden_size)
+        self.act = ACT2FN[config.hidden_act]
+        self.norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+
+    def forward(self, x):
+        return self.norm(self.act(self.dense(x)))
+
+
+class TransEmbeddings(nn.Module): # 生成word embedding
+    """Construct the embeddings from word, position and token_type embeddings."""
+    def __init__(self, config):
+        super().__init__()
+        self.pos_embeddings = nn.Embedding(config.max_position_embeddings, config.hidden_size)
+        self.norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+
+    def forward(self, x):
+        input_shape = x.size()
+        seq_length = input_shape[1]
+        device = x.device
+        
+        position_ids = torch.arange(seq_length, dtype=torch.long, device=device)
+        position_ids = position_ids.unsqueeze(0).expand(input_shape[:2])
+       
+        pos_embeddings = self.pos_embeddings(position_ids)
+        embeddings = x + pos_embeddings
+        embeddings = self.dropout(self.norm(embeddings))
+        return embeddings
 
 
 class Encoder2D(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        #self.patch_embed = InputDense2d(config)
-        #self.pos_embed = TransEmbeddings(config)
-        self.encoder = TransModel2d(config)
+        self.patch_embed = InputDense2d(config)
+        self.pos_embed = TransEmbeddings(config)
+        self.encoder = TransEncoder(config)
         assert config.img_size[0] * config.img_size[1] * config.hidden_size % 256 == 0, "不能除尽"
         self.final_dense = nn.Linear(config.hidden_size, config.img_size[0] * config.img_size[1] * config.hidden_size // 256)
         self.img_size = config.img_size
@@ -31,8 +64,8 @@ class Encoder2D(nn.Module):
         ww = w // self.img_size[1] 
 
         x = rearrange(x, 'b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = self.img_size[0], p2 = self.img_size[1])
-        #x = self.patch_embed(x)
-        #x = self.pos_embed(x)
+        x = self.patch_embed(x)
+        x = self.pos_embed(x)
         encode_x = self.encoder(x)
         x = self.final_dense(encode_x[-1])
         x = rearrange(x, "b (h w) (p1 p2 c) -> b c (h p1) (w p2)", p1 = self.img_size[0] // 16, p2 = self.img_size[1] // 16, h = hh, w = ww, c = self.config.hidden_size)
@@ -73,51 +106,9 @@ class Decoder2D(nn.Module):
         x = self.decoder_4(x)
         x = self.final_out(x)
         return x
-        
-'''
-class Decoder2D(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        in_channels = config.hidden_size
-        out_channels = config.out_channels
-        features = config.decoder_features
-        self.decoder_1 = nn.Sequential(
-                    nn.Conv2d(in_channels, features[0], 3, padding=1),
-                    nn.BatchNorm2d(features[0]),
-                    nn.ReLU(inplace=True),
-                    nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
-                )
-        self.decoder_2 = nn.Sequential(
-                    nn.Conv2d(features[0], features[1], 3, padding=1),
-                    nn.BatchNorm2d(features[1]),
-                    nn.ReLU(inplace=True),
-                    nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
-                )
-        self.decoder_3 = nn.Sequential(
-            nn.Conv2d(features[1], features[2], 3, padding=1),
-            nn.BatchNorm2d(features[2]),
-            nn.ReLU(inplace=True),
-            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
-        )
-        self.decoder_4 = nn.Sequential(
-            nn.Conv2d(features[2], features[3], 3, padding=1),
-            nn.BatchNorm2d(features[3]),
-            nn.ReLU(inplace=True),
-            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
-        )
 
-        self.final_out = nn.Conv2d(features[-1], out_channels, 3, padding=1)
 
-    def forward(self, x):
-        x = self.decoder_1(x)
-        x = self.decoder_2(x)
-        x = self.decoder_3(x)
-        x = self.decoder_4(x)
-        x = self.final_out(x)
-        return x
-'''
-
-class SETRModel(nn.Module):
+class SETRModelmodify(nn.Module):
     def __init__(self, cfg):
         super().__init__()      
         config = TransConfig(img_size=tuple(cfg.MODEL.PATCH_SIZE), 

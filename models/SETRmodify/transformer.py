@@ -70,28 +70,6 @@ class TransLayerNorm(nn.Module): # 实现layernorm
         return self.gamma * x + self.beta
       
 
-class TransEmbeddings(nn.Module): # 生成word embedding
-    """Construct the embeddings from word, position and token_type embeddings."""
-    def __init__(self, config):
-        super().__init__()
-        self.position_embeddings = nn.Embedding(config.max_position_embeddings, config.hidden_size)
-        
-        self.norm = TransLayerNorm(config.hidden_size, eps=config.layer_norm_eps)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
-
-    def forward(self, x):
-        input_shape = x.size()
-        seq_length = input_shape[1]
-        device = x.device
-        
-        position_ids = torch.arange(seq_length, dtype=torch.long, device=device)
-        position_ids = position_ids.unsqueeze(0).expand(input_shape[:2])
-       
-        position_embeddings = self.position_embeddings(position_ids)
-        embeddings = x + position_embeddings
-        embeddings = self.dropout(self.norm(embeddings))
-        return embeddings
-
 class TransSelfAttention(nn.Module): # multi-head attention
     def __init__(self, config: TransConfig):
         super().__init__()
@@ -205,34 +183,9 @@ class TransEncoder(nn.Module): # n * encoder layers
         super().__init__()
         self.layers = nn.ModuleList([TransLayer(config) for _ in range(config.num_hidden_layers)])
 
-    def forward(self, x, mask):
+    def forward(self, x, mask=None):
         all_encoder_layers = []
         for layer in self.layers:
             x = layer(x, mask)
             all_encoder_layers.append(x) 
         return all_encoder_layers
-
-class InputDense2d(nn.Module):
-    def __init__(self, config):
-        super(InputDense2d, self).__init__()
-        self.dense = nn.Linear(config.img_size[0] * config.img_size[1] * config.in_channels, config.hidden_size)
-        self.act = ACT2FN[config.hidden_act]
-        self.norm = TransLayerNorm(config.hidden_size, eps=config.layer_norm_eps)
-
-    def forward(self, x):
-        return self.norm(self.act(self.dense(x)))
-
-
-class TransModel2d(nn.Module): # transformer encoder
-    def __init__(self, config):
-        super(TransModel2d, self).__init__()
-        self.config = config
-        self.dense = InputDense2d(config)
-        self.embeddings = TransEmbeddings(config)
-        self.encoder = TransEncoder(config)
-
-    def forward(self, x, mask=None):  
-        x = self.dense(x)
-        x = self.embeddings(x)
-        encoder_layers = self.encoder(x, mask)
-        return encoder_layers

@@ -6,6 +6,17 @@ import numpy as np
 import cv2
 
 
+def flip_process(mask):
+    '''
+    在随机翻转mask后，调换左右眼与眉毛的label
+    '''
+    left_mask = (mask == 2).int() + (mask == 4).int()
+    right_mask = (mask == 3).int() + (mask == 5).int()
+    mask += left_mask
+    mask -= right_mask
+    return mask
+
+
 def transform_preds(coords, center, scale, output_size):
     target_coords = np.zeros(coords.shape)
     trans = get_affine_transform(center, scale, 0, output_size, inv=1)

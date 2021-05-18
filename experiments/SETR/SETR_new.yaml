@@ -8,7 +8,7 @@ DATA_DIR: ''
 GPUS: (0,) # set num of GPUs
 OUTPUT_DIR: 'output'
 LOG_DIR: 'log'
-WORKERS: 14 # num of subprocesses for data loading
+WORKERS: 6 # num of subprocesses for data loading
 PRINT_FREQ: 100
 
 DATASET:
@@ -40,7 +40,7 @@ MODEL:
   - 128
   - 64
   # #
-  NAME: 'SETRModel'
+  NAME: 'SETRModelnew'
   PRETRAINED: False
   PRETRAINED_NAME: ''
   PRETRAINED_PATH: ''
@@ -59,15 +59,15 @@ LOSS:
   USE_TARGET_WEIGHT: true
 TRAIN:
   AUG: true
-  BATCH_SIZE_PER_GPU: 10
+  BATCH_SIZE_PER_GPU: 16
   SHUFFLE: true
   BEGIN_EPOCH: 1
   END_EPOCH: 200
   OPTIMIZER: 'adam'
   LOSS: 'focal'
-  LR_SCHEDULE: 'constant' 
+  LR_SCHEDULE: 'warm_up_with_cosine_lr' 
   WARM_UP: 5
-  LR: 0.00001  # Initial learning rate
+  LR: 0.0001  # Initial learning rate
   LR_END: 0.00001  # Final learning rate
   LR_FACTOR: 0.25  # for MultiStepLR
   LR_STEP:  # for MultiStepLR
@@ -80,12 +80,13 @@ TRAIN:
   GAMMA2: 0.0
   MOMENTUM: 0.9
   NESTEROV: False
-  CHECKPOINT: 'setr_seg_focal_aug.pkl'
+  CHECKPOINT: 'setrnew_seg_focal_fliptest_std.pkl'
 TEST:
   BLUR_KERNEL: 11
   BATCH_SIZE_PER_GPU: 1
   SHUFFLE: false
   TEST_FUNC: 'compute_meanf1'
+  PLOT_PRED: true
   FLIP_TEST: true
   POST_PROCESS: true
   SHIFT_HEATMAP: true
